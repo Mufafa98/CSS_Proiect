@@ -8,11 +8,11 @@ class Scheduler:
         self.user_slice = input.get_user_slice()
         self.sys_slice = input.get_sys_slice()
 
-        self.process_queue = ProcessQueue(system.get_processes(), system.cores())
+        self.process_queue = ProcessQueue(system.get_processes(), system.get_system_process(), system.cores())
         self.system = system
 
     def step(self):
-        if self.process_queue.active_cores() == 0:
+        if self.process_queue.count_runing() == 0:
             print(f"Nothing to run {self.process_queue}")
             return
         
@@ -25,11 +25,14 @@ class Scheduler:
                 self.process_queue.stop(process)
                 sys_slice = process.process.get_sys_slice()
                 if sys_slice is not None:
-                    pass
+                    self.system.make_sys_call(process.process, sys_slice)
     
     def run(self):
+        cycle = 0
         while True:
-            time.sleep(0.5) 
+            time.sleep(0.35)
+            print(f"cycle {cycle}")
+            cycle += 1
             self.step()
             if not self.process_queue.schedule_conditions():
                 continue

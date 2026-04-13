@@ -1,9 +1,10 @@
+from typing import Deque
 from process import Process
-
 class System:
     def __init__(self, input: Input) -> None:
         self.processes = dict[int, Process]()
-        counter = 0
+        self.sys_proc = Process(0, [], True)
+        counter = 1
         while True:
             execution = input.get_next_execution_sequence()
             if execution == None:
@@ -14,15 +15,22 @@ class System:
     def get_processes(self) -> list[Process]:
         return list(self.processes.values())
 
+    def get_system_process(self) -> Process:
+        return self.sys_proc
+
     def cores(self) -> list[int]:
-        return [1]
+        return [1, 2, 3]
+
+    def make_sys_call(self, process: Process, time: int):
+        self.sys_proc.add_sys_call(process, time)
+
 
 class Input:
     def __init__(self):
         self.execution_sequence = [
-                [5, 6, 5, 7, 8, 5, 8],
+                [5, 1, 5, 1, 8, 1, 8],
                 [4],
-                [5, 7, 5, 7, 7, 7, 5]
+                [5, 2, 5, 2, 7, 2, 5]
                 ]
         self.sequence_returned = -1
 

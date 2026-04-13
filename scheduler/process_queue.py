@@ -16,7 +16,8 @@ class ProcessOnCore:
         return f"process_id: {self.process} time: {self.time}"
 
 class ProcessQueue:
-    def __init__(self, waiting: list[Process], cores: list[int]):
+    def __init__(self, waiting: list[Process], system_process: Process, cores: list[int]):
+        self.__waiting_sys = system_process
         self.__waiting = Deque(waiting)
         self.__runing = list[ProcessOnCore]()
         self.__done = list[Process]()
@@ -27,12 +28,18 @@ class ProcessQueue:
         waiting = [proc.id for proc in self.__waiting]
         running = [proc.process.id for proc in self.__runing]
         done = [proc.id for proc in self.__done]
-        return f"w {waiting} r {running} d {done}"
+        wait_sys = "" if self.__waiting_sys is None else f"{self.__waiting_sys.id}" 
+        return f"ws [{wait_sys}] w {waiting} r {running} d {done}"
 
     def running(self) -> list[ProcessOnCore]:
         return self.__runing
 
     def pop_runable(self) -> Process | None:
+        if self.__waiting_sys is not None and self.__waiting_sys.left_to_run != 0:
+            process = self.__waiting_sys
+            self.__waiting_sys = None
+            return process
+        
         counter = 0
         while counter != len(self.__waiting):
             process = self.__waiting.popleft()
@@ -53,11 +60,15 @@ class ProcessQueue:
     def stop(self, process: ProcessOnCore):
         self.__runing.remove(process)
         self.__free_cores.append(process.core)
+        
+        if process.process.sys_proc:
+            self.__waiting_sys = process.process
+            return
 
         if process.process.is_done():
            self.__done.append(process.process)
         else:
             self.__waiting.append(process.process)
 
-    def active_cores(self) -> int:
+    def count_runing(self) -> int:
         return len(self.__runing)
