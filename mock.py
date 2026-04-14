@@ -28,9 +28,9 @@ class System:
 class Input:
     def __init__(self):
         self.execution_sequence = [
-                [5, 1, 5, 1, 8, 1, 8],
-                [4],
-                [5, 2, 5, 2, 7, 2, 5]
+                [3, 2, 3],
+                [3],
+                [3, 2, 3]
                 ]
         self.sequence_returned = -1
 
