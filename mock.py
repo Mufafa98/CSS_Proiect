@@ -24,18 +24,20 @@ class System:
     def make_sys_call(self, process: Process, time: int):
         self.sys_proc.add_sys_call(process, time)
 
+    def load_in_memory(self, process: Process) -> bool:
+        return True
 
 class Input:
     def __init__(self):
         self.execution_sequence = [
-                [3, 2, 3],
-                [3],
-                [3, 2, 3]
+                [5],
+                [5],
+                [1]
                 ]
         self.sequence_returned = -1
 
     def get_user_slice(self) -> int:
-        return 3
+        return 2
 
     def get_sys_slice(self) -> int:
         return 5
