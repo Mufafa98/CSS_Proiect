@@ -11,6 +11,7 @@ class Scheduler:
         self.system = system
 
     def step(self):
+        self.system.step()
         if self.process_queue.count_runing() == 0:
             print(f"Nothing to run {self.process_queue}")
             exit(0)
