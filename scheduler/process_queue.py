@@ -55,8 +55,8 @@ class ProcessQueue:
     def schedule_conditions(self) -> bool:
         return len(self.__waiting) != 0 and len(self.__free_cores) != 0
 
-    def run(self, process: Process):
-        # TODO: ASK -> Should be scheduled on most recent cpu as a variable or from the list
+    # Return the id of the core where it was run
+    def run(self, process: Process) -> int:
         most_recent = process.get_last_cpu()
         core = self.__free_cores.pop()
         try:
@@ -67,6 +67,7 @@ class ProcessQueue:
             pass
         process.record_cpu(core)
         self.__runing.append(ProcessOnCore(process, 0, core))
+        return core
 
     def stop(self, process: ProcessOnCore):
         self.__runing.remove(process)

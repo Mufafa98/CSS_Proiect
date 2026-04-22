@@ -10,7 +10,6 @@ class Input:
         pid = 1
         self.processes = list[Process]()
         # Last Returned Process
-        self.lrp = -1
 
         for line in lines:
             line = line.split("#")[0].strip()
