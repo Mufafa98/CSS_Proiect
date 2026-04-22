@@ -1,7 +1,7 @@
 
 from typing import Deque
 from process import Process
-from mock import System
+from system.system import System
 
 class ProcessOnCore:
     process: Process

@@ -1,6 +1,6 @@
 from typing import List, Dict
 from process import Process
-from mock import Input
+from input import Input
 
 class System:
     def __init__(self, input: Input) -> None:
@@ -23,13 +23,10 @@ class System:
         self.transfer_ticks_left = 0    
         self.loading_process = None      
 
-        counter = 1
-        while True:
-            execution = input.get_next_execution_sequence()
-            if execution is None:
-                break
-            self.processes[counter] = Process(counter, execution, False)
-            counter += 1
+        processes_unmaped = input.get_processes()
+        self.processes = dict[int, Process]()
+        for process in processes_unmaped:
+            self.processes[process.id] = process 
 
     
     def get_processes(self) -> List[Process]:
@@ -45,7 +42,7 @@ class System:
         self.sys_proc.add_sys_call(process, time)
 
     def load_in_memory(self, process: Process) -> bool:
-        if process.is_in_memory():
+        if not process.is_in_memory():
             self._update_lru(process.get_id())
             return True
 
