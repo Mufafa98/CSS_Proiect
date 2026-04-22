@@ -1,5 +1,6 @@
-from mock import Input, System
 from .process_queue import ProcessQueue 
+from system.system import System
+from input import Input
 import time
 
 class Scheduler:
