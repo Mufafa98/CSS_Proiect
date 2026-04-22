@@ -1,21 +1,22 @@
+from output import Output
 from .process_queue import ProcessQueue 
 from system.system import System
 from input import Input
 import time
 
 class Scheduler:
-    def __init__(self, input: Input, system: System) -> None:
+    def __init__(self, input: Input, system: System, output: Output) -> None:
         self.user_slice = input.get_user_slice()
         self.sys_slice = input.get_sys_slice()
 
         self.process_queue = ProcessQueue(system.get_processes(), system.get_system_process(), system.cores())
         self.system = system
+        self.output = output
 
     def step(self):
-        self.system.step()
         if self.process_queue.count_runing() == 0:
             print(f"Nothing to run {self.process_queue}")
-            exit(0)
+            raise Exception("NOTHING TO RUN")
 
         to_stop = []
 
@@ -30,6 +31,7 @@ class Scheduler:
                 to_stop.append((process, reason))
 
         for (process, reason) in to_stop:
+            self.output.unscheduled(process.process.id, reason)
             print(f"Stop proc {process.process.id} reason: {reason}")
             self.process_queue.stop(process)
             sys_slice = process.process.get_sys_slice()
@@ -46,14 +48,16 @@ class Scheduler:
             process = self.process_queue.pop_runable(self.system)
             if process == None:
                 return
-
-            self.process_queue.run(process)
+            core = self.process_queue.run(process)
+            self.output.scheduled(process.id, core)
 
 
     def run(self):
         cycle = 0
         self.fill_cores()
         while True:
+            self.system.step()
+            self.output.tick(cycle)
             time.sleep(0.35)
             print(f"cycle {cycle}")
             cycle += 1

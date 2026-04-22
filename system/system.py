@@ -1,9 +1,10 @@
 from typing import List, Dict
+from output import Output
 from process import Process
 from input import Input
 
 class System:
-    def __init__(self, input: Input) -> None:
+    def __init__(self, input: Input, output: Output) -> None:
         self.processes = {}
         #maximum priority
         self.sys_proc = Process(0, [], True) 
@@ -28,6 +29,8 @@ class System:
         for process in processes_unmaped:
             self.processes[process.id] = process 
 
+        self.output = output
+
     
     def get_processes(self) -> List[Process]:
         return list(self.processes.values())
@@ -42,6 +45,7 @@ class System:
         self.sys_proc.add_sys_call(process, time)
 
     def load_in_memory(self, process: Process) -> bool:
+        # TODO: This should return true only if the given process is in memory and ready to be run
         if not process.is_in_memory():
             self._update_lru(process.get_id())
             return True
@@ -54,7 +58,7 @@ class System:
 
 
     def _initiate_transfer(self, process: Process):
-
+        # TODO: Log that we have started loading a process in memory 
         while self.available_ram < process.get_memory_required():
             self._evict_lru()
 
@@ -64,7 +68,7 @@ class System:
 
     def _evict_lru(self):
         if not self.lru_stack: return
-        
+        # TODO: What happens if we evict a process that is already running on cpu? should be illegal 
         victim_id = self.lru_stack.pop(0) 
         victim = self.processes.get(victim_id)
         
@@ -85,6 +89,7 @@ class System:
             self.transfer_ticks_left -= 1 
 
             if self.transfer_ticks_left <= 0:
+                # TODO: Here should log that loading has finished?
                 self.loading_process.load_into_memory()
                 self.ram_content.append(self.loading_process)
                 self._update_lru(self.loading_process.get_id())
