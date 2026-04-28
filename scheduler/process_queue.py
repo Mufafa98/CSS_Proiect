@@ -84,3 +84,6 @@ class ProcessQueue:
 
     def count_runing(self) -> int:
         return len(self.__runing)
+    
+    def count_waiting(self) -> int:
+        return len(self.__waiting)
