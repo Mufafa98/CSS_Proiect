@@ -27,7 +27,13 @@ class Scheduler:
 
             time_slice = self.user_slice if not process.process.sys_proc else self.sys_slice
             if process.time >= time_slice or process.process.left_to_run == 0:
-                reason = "time" if process.time >= time_slice else "finished"
+                reason = "undefined"
+                if process.time >= time_slice:
+                    reason = "time"
+                elif process.process.is_waiting_for_sys_call():
+                    reason = "syscall"
+                else:
+                    reason = "finished"
                 to_stop.append((process, reason))
 
         for (process, reason) in to_stop:
