@@ -11,8 +11,8 @@ class Output:
         self.log_file.write(f"{string}\n")
         self.log_file.flush()
 
-    def log(self, string: str):
-        self.write(string)
+    # def log(self, string: str):
+    #     self.write(string)
 
     def tick(self, time: int):
         self.write(f"[   Tick   ] time {time}")
@@ -23,14 +23,11 @@ class Output:
     def unscheduled(self, process_id: int, reason: str):
         self.write(f"[Unschedule] process {process_id} reason {reason}")
 
-    def start_load_in_memory(self, process_id: int):
-        pass
-
-    def end_load_in_memory(self, process_id: int):
-        pass
+    def load_in_memory(self, process_id: int):
+        self.write(f"[ LoadMem  ] process {process_id}")
 
     def unload_from_memory(self, process_id: int):
-        pass
+        self.write(f"[UnloadMem ] process {process_id}")
 
     def close(self):
         self.log_file.close()

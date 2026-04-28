@@ -227,12 +227,6 @@ class System:
         self.is_transferring = True
         self.loading_process = process
 
-        self.output.log(
-            f"[MEM] Started loading P{process.get_id()} from disk "
-            f"(size={process.get_memory_required()}, "
-            f"transfer_ticks={ticks}, "
-            f"free_ram_before={self.available_ram})"
-        )
 
     def _evict_lru(self) -> Optional[Process]:
         """
@@ -262,11 +256,7 @@ class System:
             self.ram_content.remove(victim)
             self.available_ram += victim.get_memory_required()
 
-            self.output.log(
-                f"[MEM] Evicted P{victim.get_id()} from RAM "
-                f"(freed={victim.get_memory_required()}, "
-                f"free_ram_now={self.available_ram})"
-            )
+            self.output.unload_from_memory(victim.get_id())
             return victim
 
         # All in-memory processes are currently running, nothing can be evicted.
@@ -305,7 +295,7 @@ class System:
         """
         if self.is_transferring and self.loading_process:
             self.transfer_ticks_left -= 1
-
+            self.output.load_in_memory(self.loading_process.get_id())
             if self.transfer_ticks_left <= 0:
                 loaded: Process = self.loading_process
 
@@ -313,12 +303,6 @@ class System:
                 self.ram_content.append(loaded)
                 self._update_lru(loaded.get_id())
                 self.available_ram -= loaded.get_memory_required()
-
-                self.output.log(
-                    f"[MEM] Finished loading P{loaded.get_id()} into RAM "
-                    f"(size={loaded.get_memory_required()}, "
-                    f"free_ram_now={self.available_ram})"
-                )
 
                 self.is_transferring = False
                 self.loading_process = None
