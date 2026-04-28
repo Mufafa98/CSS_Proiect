@@ -64,7 +64,7 @@ class Scheduler:
         while True:
             self.system.step()
             self.output.tick(cycle)
-            time.sleep(0.35)
+            time.sleep(0.1)
             print(f"cycle {cycle}")
             cycle += 1
             self.step()

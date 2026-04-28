@@ -138,6 +138,34 @@ class MainWindow(QMainWindow):
         card_layout.addWidget(self.chart_area)
         layout.addWidget(card, stretch=1)
 
+        process_section = QFrame()
+        process_section.setObjectName("Card")
+        process_layout = QVBoxLayout(process_section)
+        process_layout.setContentsMargins(8, 8, 8, 8)
+        process_layout.setSpacing(6)
+
+        process_title = QLabel("Processes")
+        process_title.setObjectName("SectionTitle")
+        process_layout.addWidget(process_title)
+
+        self.process_cards_container = QWidget()
+        self.process_cards_container.setObjectName("ProcessCardsContainer")
+        self.process_cards_layout = QHBoxLayout(self.process_cards_container)
+        self.process_cards_layout.setContentsMargins(0, 0, 0, 0)
+        self.process_cards_layout.setSpacing(8)
+
+        self.process_scroll = QScrollArea()
+        self.process_scroll.setObjectName("ProcessScroll")
+        self.process_scroll.setWidgetResizable(True)
+        self.process_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.process_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.process_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.process_scroll.setWidget(self.process_cards_container)
+        self.process_scroll.setFixedHeight(140)
+
+        process_layout.addWidget(self.process_scroll)
+        layout.addWidget(process_section)
+
         self.setCentralWidget(root)
 
     def _apply_style(self) -> None:
@@ -186,6 +214,7 @@ class MainWindow(QMainWindow):
         memory_total = 0
         disk_rate = 0
         process_mem: dict[int, int] = {}
+        process_seq: dict[int, list[int]] = {}
         input_error: str | None = None
 
         try:
@@ -193,6 +222,7 @@ class MainWindow(QMainWindow):
             memory_total = input_cfg.memory_total
             disk_rate = input_cfg.disk_rate
             process_mem = input_cfg.process_mem
+            process_seq = input_cfg.process_seq
         except Exception as ex:
             input_error = str(ex)
 
@@ -209,6 +239,7 @@ class MainWindow(QMainWindow):
         self.loadmem_widget.setData(memory_by_tick, final_time, memory_total)
         self.timeline_container.adjustSize()
         self.update_legend(intervals)
+        self.update_process_cards(process_mem, process_seq)
 
         status = f"Loaded {len(intervals)} intervals, {len(cores)} cores, time 0..{final_time}"
         if input_error:
@@ -256,6 +287,7 @@ class MainWindow(QMainWindow):
             self.loadmem_widget.setData([], 0, 0)
             self.timeline_container.adjustSize()
             self.update_legend([])
+            self.update_process_cards({}, {})
             self.statusBar().showMessage(f"Error: {ex}")
 
     def update_legend(self, intervals: list[Interval]) -> None:
@@ -315,3 +347,56 @@ class MainWindow(QMainWindow):
         item_layout.addWidget(label)
 
         self.legend_items_layout.addWidget(item)
+
+    def update_process_cards(
+        self,
+        process_mem: dict[int, int],
+        process_seq: dict[int, list[int]],
+    ) -> None:
+        self.clear_layout(self.process_cards_layout)
+
+        pids = sorted(set(process_mem.keys()) | set(process_seq.keys()))
+        if not pids:
+            label = QLabel("(no process data)")
+            label.setStyleSheet(f"color: {TEXT_MUTED};")
+            self.process_cards_layout.addWidget(label)
+            self.process_cards_layout.addStretch(1)
+            return
+
+        for pid in pids:
+            card = QFrame()
+            card.setObjectName("ProcessCard")
+            card.setFixedWidth(220)
+
+            card_layout = QVBoxLayout(card)
+            card_layout.setContentsMargins(8, 8, 8, 8)
+            card_layout.setSpacing(6)
+
+            header_row = QHBoxLayout()
+            header_row.setSpacing(6)
+
+            swatch = QFrame()
+            swatch.setFixedSize(12, 12)
+            swatch.setStyleSheet(f"background: {color_for_pid(pid)}; border-radius: 2px;")
+            header_row.addWidget(swatch)
+
+            title = QLabel(f"P{pid}")
+            title.setStyleSheet("font-weight: 700;")
+            header_row.addWidget(title)
+            header_row.addStretch(1)
+
+            card_layout.addLayout(header_row)
+
+            mem = process_mem.get(pid, 0)
+            mem_label = QLabel(f"Memory: {mem}")
+            card_layout.addWidget(mem_label)
+
+            seq = process_seq.get(pid, [])
+            seq_text = " ".join(str(x) for x in seq) if seq else "(none)"
+            seq_label = QLabel(f"Exec: {seq_text}")
+            seq_label.setWordWrap(True)
+            card_layout.addWidget(seq_label)
+
+            self.process_cards_layout.addWidget(card)
+
+        self.process_cards_layout.addStretch(1)
