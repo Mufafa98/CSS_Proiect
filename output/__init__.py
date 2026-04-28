@@ -11,6 +11,9 @@ class Output:
         self.log_file.write(f"{string}\n")
         self.log_file.flush()
 
+    def log(self, string: str):
+        self.write(string)
+
     def tick(self, time: int):
         self.write(f"[   Tick   ] time {time}")
 
