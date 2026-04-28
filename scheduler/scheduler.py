@@ -14,9 +14,9 @@ class Scheduler:
         self.output = output
 
     def step(self):
-        if self.process_queue.count_runing() == 0:
+        if self.process_queue.count_runing() == 0 and self.process_queue.count_waiting() == 0:
             print(f"Nothing to run {self.process_queue}")
-            raise Exception("NOTHING TO RUN")
+            raise Exception("Finished")
 
         to_stop = []
 
