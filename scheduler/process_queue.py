@@ -1,4 +1,3 @@
-
 from typing import Deque
 from process import Process
 from system.system import System
@@ -58,13 +57,13 @@ class ProcessQueue:
     # Return the id of the core where it was run
     def run(self, process: Process) -> int:
         most_recent = process.get_last_cpu()
-        core = self.__free_cores.pop()
-        try:
-            if most_recent is not None:
-                core = most_recent
-                self.__free_cores.remove(most_recent)
-        except:
-            pass
+
+        if most_recent is not None and most_recent in self.__free_cores:
+            core = most_recent
+            self.__free_cores.remove(most_recent)
+        else:
+            core = self.__free_cores.pop()
+
         process.record_cpu(core)
         self.__runing.append(ProcessOnCore(process, 0, core))
         return core

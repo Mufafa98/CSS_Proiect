@@ -1,3 +1,4 @@
+import math
 from typing import List, Optional
 from output import Output
 from process import Process
@@ -222,7 +223,7 @@ class System:
                     f"All evictable processes are currently running on a CPU."
                 )
 
-        ticks: int = max(1, process.get_memory_required() // self.transfer_rate)
+        ticks: int = max(1, math.ceil(process.get_memory_required() / self.transfer_rate))
         self.transfer_ticks_left = ticks
         self.is_transferring = True
         self.loading_process = process
