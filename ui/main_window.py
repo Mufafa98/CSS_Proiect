@@ -11,6 +11,7 @@ from PyQt6.QtWidgets import (
     QMainWindow,
     QPushButton,
     QFileDialog,
+    QLayout,
     QScrollArea,
     QSlider,
     QVBoxLayout,
@@ -18,7 +19,8 @@ from PyQt6.QtWidgets import (
 )
 
 from ui.gantt_widget import GanttWidget
-from ui.parsing import Interval, parse_log
+from ui.loadmem_widget import LoadMemWidget
+from ui.parsing import Interval, parse_log, parse_input, build_memory_timeline
 from ui.style import MAIN_STYLE, TEXT_MUTED, color_for_pid
 
 
@@ -29,6 +31,7 @@ class MainWindow(QMainWindow):
         self.resize(1100, 650)
 
         self.default_log = Path(".") / "logs" / "log.txt"
+        self.default_input = Path(".") / "input.txt"
 
         self._watch_timer: QTimer | None = None
         self._last_path: Path | None = None
@@ -116,11 +119,21 @@ class MainWindow(QMainWindow):
         card_layout = QVBoxLayout(card)
         card_layout.setContentsMargins(8, 8, 8, 8)
 
+        self.loadmem_widget = LoadMemWidget()
         self.chart = GanttWidget()
+
+        self.timeline_container = QWidget()
+        self.timeline_layout = QVBoxLayout(self.timeline_container)
+        self.timeline_layout.setContentsMargins(0, 0, 0, 0)
+        self.timeline_layout.setSpacing(8)
+        self.timeline_layout.setSizeConstraint(QLayout.SizeConstraint.SetFixedSize)
+        self.timeline_layout.addWidget(self.loadmem_widget)
+        self.timeline_layout.addWidget(self.chart)
+
         self.chart_area = QScrollArea()
         self.chart_area.setWidgetResizable(False)
         self.chart_area.setFrameShape(QFrame.Shape.NoFrame)
-        self.chart_area.setWidget(self.chart)
+        self.chart_area.setWidget(self.timeline_container)
 
         card_layout.addWidget(self.chart_area)
         layout.addWidget(card, stretch=1)
@@ -148,6 +161,8 @@ class MainWindow(QMainWindow):
     def on_zoom_changed(self, value: int) -> None:
         self.zoom_label.setText(str(value))
         self.chart.setUnitWidth(value)
+        self.loadmem_widget.setUnitWidth(value)
+        self.timeline_container.adjustSize()
 
     def _init_watcher(self) -> None:
         self._watch_timer = QTimer(self)
@@ -166,12 +181,39 @@ class MainWindow(QMainWindow):
             self._last_size = None
 
     def _parse_and_render(self, path: Path) -> None:
-        intervals, cores, final_time = parse_log(path)
-        self.chart.setData(intervals, cores, final_time)
-        self.update_legend(intervals)
-        self.statusBar().showMessage(
-            f"Loaded {len(intervals)} intervals, {len(cores)} cores, time 0..{final_time}"
+        intervals, cores, final_time, loadmem_by_tick, unloadmem_by_tick = parse_log(path)
+
+        memory_total = 0
+        disk_rate = 0
+        process_mem: dict[int, int] = {}
+        input_error: str | None = None
+
+        try:
+            input_cfg = parse_input(self.default_input)
+            memory_total = input_cfg.memory_total
+            disk_rate = input_cfg.disk_rate
+            process_mem = input_cfg.process_mem
+        except Exception as ex:
+            input_error = str(ex)
+
+        memory_by_tick = build_memory_timeline(
+            loadmem_by_tick,
+            unloadmem_by_tick,
+            final_time,
+            memory_total,
+            disk_rate,
+            process_mem,
         )
+
+        self.chart.setData(intervals, cores, final_time)
+        self.loadmem_widget.setData(memory_by_tick, final_time, memory_total)
+        self.timeline_container.adjustSize()
+        self.update_legend(intervals)
+
+        status = f"Loaded {len(intervals)} intervals, {len(cores)} cores, time 0..{final_time}"
+        if input_error:
+            status += f" | input: {input_error}"
+        self.statusBar().showMessage(status)
 
     def _check_log_updates(self) -> None:
         try:
@@ -211,6 +253,8 @@ class MainWindow(QMainWindow):
             self._set_watch_baseline(path)
         except Exception as ex:
             self.chart.setData([], [], 0)
+            self.loadmem_widget.setData([], 0, 0)
+            self.timeline_container.adjustSize()
             self.update_legend([])
             self.statusBar().showMessage(f"Error: {ex}")
 
