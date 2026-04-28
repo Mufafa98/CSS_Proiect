@@ -28,6 +28,7 @@ class InputConfig:
     memory_total: int
     disk_rate: int
     process_mem: dict[int, int]
+    process_seq: dict[int, list[int]]
 
 
 def parse_log(path: str | Path) -> tuple[list[Interval], list[int], int, list[list[int]], list[list[int]]]:
@@ -127,6 +128,7 @@ def parse_input(path: str | Path) -> InputConfig:
     memory_total: int | None = None
     disk_rate: int | None = None
     process_mem: dict[int, int] = {}
+    process_seq: dict[int, list[int]] = {}
 
     with open(path, "r", encoding="utf-8") as f:
         for raw in f:
@@ -143,11 +145,18 @@ def parse_input(path: str | Path) -> InputConfig:
                 pid = int(parts[1])
                 mem = int(parts[2])
                 process_mem[pid] = mem
+                seq = [int(x) for x in parts[3:]] if len(parts) > 3 else []
+                process_seq[pid] = seq
 
     if memory_total is None or disk_rate is None:
         raise ValueError("Missing MEMORY or DISK_RATE in input file")
 
-    return InputConfig(memory_total=memory_total, disk_rate=disk_rate, process_mem=process_mem)
+    return InputConfig(
+        memory_total=memory_total,
+        disk_rate=disk_rate,
+        process_mem=process_mem,
+        process_seq=process_seq,
+    )
 
 
 def build_memory_timeline(
