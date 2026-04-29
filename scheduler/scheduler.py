@@ -52,6 +52,7 @@ class Scheduler:
         )
         self.system = system
         self.output = output
+        self.current_tick = 0
 
     def step(self) -> None:
         """
@@ -98,7 +99,7 @@ class Scheduler:
         Stops when no cores are free or no processes are runnable.
         """
         while self.process_queue.schedule_conditions():
-            process = self.process_queue.pop_runnable(self.system)
+            process = self.process_queue.pop_runnable(self.system, self.current_tick)
             if process is None:
                 return
             core = self.process_queue.run(process)
@@ -114,13 +115,12 @@ class Scheduler:
         - Sleep briefly to slow down the log.
         - Run one scheduling step and refill cores.
         """
-        cycle = 0
         self.fill_cores()
         while True:
             self.system.step()
-            self.output.tick(cycle)
+            self.output.tick(self.current_tick)
             time.sleep(0.5)
-            cycle += 1
+            self.current_tick += 1
             self.step()
 
 

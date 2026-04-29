@@ -31,9 +31,9 @@ class Input:
             elif field == "DISK_RATE":
                 self.disk_speed = int(parts[1])
             elif parts[0] == "PROCESS":
-                release = int(parts[1])
                 mem = int(parts[2])
-                execution_sequence = list(map(int, parts[3:]))
+                release = int(parts[3])
+                execution_sequence = list(map(int, parts[4:]))
 
                 if len(execution_sequence) % 2 == 0:
                     raise ValueError("Invalid burst format")

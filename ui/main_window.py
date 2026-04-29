@@ -218,6 +218,7 @@ class MainWindow(QMainWindow):
         disk_rate = 0
         process_mem: dict[int, int] = {}
         process_seq: dict[int, list[int]] = {}
+        process_release: dict[int, int] = {}
         input_error: str | None = None
 
         try:
@@ -226,6 +227,7 @@ class MainWindow(QMainWindow):
             disk_rate = input_cfg.disk_rate
             process_mem = input_cfg.process_mem
             process_seq = input_cfg.process_seq
+            process_release = input_cfg.process_release
         except Exception as ex:
             input_error = str(ex)
 
@@ -242,7 +244,7 @@ class MainWindow(QMainWindow):
         self.loadmem_widget.setData(memory_by_tick, final_time, memory_total)
         self.timeline_container.adjustSize()
         self.update_legend(intervals)
-        self.update_process_cards(process_mem, process_seq)
+        self.update_process_cards(process_mem, process_seq, process_release)
 
         status = f"Loaded {len(intervals)} intervals, {len(cores)} cores, time 0..{final_time}"
         if input_error:
@@ -290,7 +292,7 @@ class MainWindow(QMainWindow):
             self.loadmem_widget.setData([], 0, 0)
             self.timeline_container.adjustSize()
             self.update_legend([])
-            self.update_process_cards({}, {})
+            self.update_process_cards({}, {}, {})
             self.statusBar().showMessage(f"Error: {ex}")
 
     def update_legend(self, intervals: list[Interval]) -> None:
@@ -355,10 +357,11 @@ class MainWindow(QMainWindow):
         self,
         process_mem: dict[int, int],
         process_seq: dict[int, list[int]],
+        process_release: dict[int, int],
     ) -> None:
         self.clear_layout(self.process_cards_layout)
 
-        pids = sorted(set(process_mem.keys()) | set(process_seq.keys()))
+        pids = sorted(set(process_mem.keys()) | set(process_seq.keys()) | set(process_release.keys()))
         if not pids:
             label = QLabel("(no process data)")
             label.setStyleSheet(f"color: {TEXT_MUTED};")
@@ -391,8 +394,10 @@ class MainWindow(QMainWindow):
             card_layout.addLayout(header_row)
 
             mem = process_mem.get(pid, 0)
-            mem_label = QLabel(f"Memory: {mem}")
-            card_layout.addWidget(mem_label)
+            card_layout.addWidget(QLabel(f"Memory: {mem}"))
+
+            rel = process_release.get(pid, 0)
+            card_layout.addWidget(QLabel(f"Release: t={rel}"))
 
             seq = process_seq.get(pid, [])
             seq_text = " ".join(str(x) for x in seq) if seq else "(none)"

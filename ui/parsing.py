@@ -29,6 +29,7 @@ class InputConfig:
     disk_rate: int
     process_mem: dict[int, int]
     process_seq: dict[int, list[int]]
+    process_release: dict[int, int]
 
 
 def parse_log(path: str | Path) -> tuple[list[Interval], list[int], int, list[list[int]], list[list[int]]]:
@@ -129,6 +130,7 @@ def parse_input(path: str | Path) -> InputConfig:
     disk_rate: int | None = None
     process_mem: dict[int, int] = {}
     process_seq: dict[int, list[int]] = {}
+    process_release: dict[int, int] = {}
 
     with open(path, "r", encoding="utf-8") as f:
         for raw in f:
@@ -141,12 +143,20 @@ def parse_input(path: str | Path) -> InputConfig:
                 memory_total = int(parts[1])
             elif key == "DISK_RATE" and len(parts) >= 2:
                 disk_rate = int(parts[1])
-            elif key == "PROCESS" and len(parts) >= 3:
+            elif key == "PROCESS":
+                if len(parts) < 5:
+                    raise ValueError(
+                        "PROCESS format must be: PROCESS <pid> <mem> <release> <execution_sequence...>"
+                    )
+
                 pid = int(parts[1])
                 mem = int(parts[2])
+                release = int(parts[3])
+                seq_tokens = parts[4:]
+
                 process_mem[pid] = mem
-                seq = [int(x) for x in parts[3:]] if len(parts) > 3 else []
-                process_seq[pid] = seq
+                process_release[pid] = release
+                process_seq[pid] = [int(x) for x in seq_tokens]
 
     if memory_total is None or disk_rate is None:
         raise ValueError("Missing MEMORY or DISK_RATE in input file")
@@ -156,6 +166,7 @@ def parse_input(path: str | Path) -> InputConfig:
         disk_rate=disk_rate,
         process_mem=process_mem,
         process_seq=process_seq,
+        process_release=process_release,
     )
 
 

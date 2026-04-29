@@ -54,12 +54,13 @@ class ProcessQueue:
         """
         return self.__running
 
-    def pop_runnable(self, system: System) -> Optional[Process]:
+    def pop_runnable(self, system: System, current_tick: int) -> Optional[Process]:
         """
         Pop the next runnable process.
 
         - System process (pid 0) has priority if it has work.
         - User processes are rotated until a runnable one is found.
+        - A user process is runnable only if current_tick >= release_time.
 
         Returns
         -------
@@ -75,11 +76,16 @@ class ProcessQueue:
         while counter != len(self.__waiting):
             process = self.__waiting.popleft()
 
-            if process.left_to_run == 0 or not system.load_in_memory(process):
+            # Release-time gate
+            if current_tick < process.get_release_time():
+                self.__waiting.append(process)
+            elif process.left_to_run == 0 or not system.load_in_memory(process):
                 self.__waiting.append(process)
             else:
                 return process
+
             counter += 1
+
         return None
 
     def schedule_conditions(self) -> bool:
