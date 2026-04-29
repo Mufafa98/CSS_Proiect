@@ -74,13 +74,18 @@ class Scheduler:
             slot.time += 1
 
             time_slice = self.sys_slice if proc.sys_proc else self.user_slice
-            if slot.time >= time_slice or proc.left_to_run == 0:
-                if slot.time >= time_slice:
-                    reason = "time"
+
+            reached_time = slot.time >= time_slice
+            stopped_exec = proc.left_to_run == 0
+
+            if reached_time or stopped_exec:
+                # Priority: finished > syscall > time
+                if proc.is_done():
+                    reason = "finished"
                 elif proc.is_waiting_for_sys_call():
                     reason = "syscall"
                 else:
-                    reason = "finished"
+                    reason = "time"
                 to_stop.append((slot, reason))
 
         for slot, reason in to_stop:
