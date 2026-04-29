@@ -94,7 +94,6 @@ def simulate(params, processes):
             cpu.slice_left -= 1
             p.cpu_time += 1
 
-            # burst end
             if p.remaining == 0:
                 p.idx += 1
 

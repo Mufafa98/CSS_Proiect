@@ -42,19 +42,18 @@ def parse_input(source: str | Path) -> tuple[dict[str, int], list[ProcessRecord]
         if key == "PROCESS" and len(parts) >= 4:
             release = int(parts[1])
             memory = int(parts[2])
-            bursts = [int(value) for value in parts[3:]]
+            execution_sequence = [int(value) for value in parts[3:]]
 
-            proc = Process(pid, bursts, False, release, memory)
+            proc = Process(pid, execution_sequence, False, release, memory)
 
             # Compatibility aliases expected by the prototype simulator
-            # flat bursts list (run, syscall, run, syscall, ... , run)
-            flat_bursts: list[int] = []
+            flat_exec_seq: list[int] = []
             for stage in getattr(proc, "_stages", []):
-                flat_bursts.append(stage.run_ticks)
+                flat_exec_seq.append(stage.run_ticks)
                 if stage.sys_call_ticks is not None:
-                    flat_bursts.append(stage.sys_call_ticks)
+                    flat_exec_seq.append(stage.sys_call_ticks)
 
-            proc.bursts = flat_bursts
+            proc.exec_seq = flat_exec_seq
             proc.pid = proc.id
             proc.release = proc.release_time
             proc.mem = proc.memory_required
@@ -62,7 +61,7 @@ def parse_input(source: str | Path) -> tuple[dict[str, int], list[ProcessRecord]
             proc.swap_ins = 0
             proc.start_time = None
             proc.last_cpu = None
-            proc.remaining = flat_bursts[0] if flat_bursts else 0
+            proc.remaining = flat_exec_seq[0] if flat_exec_seq else 0
             proc.idx = 0
             proc.cpu_time = 0
             proc.syscalls = 0

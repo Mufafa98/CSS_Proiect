@@ -36,7 +36,7 @@ class Input:
                 execution_sequence = list(map(int, parts[4:]))
 
                 if len(execution_sequence) % 2 == 0:
-                    raise ValueError("Invalid burst format")
+                    raise ValueError("Invalid execution sequence format")
                 process = Process(pid, execution_sequence, False, release_time=release, memory_required=mem)
                 self.processes.append(process)
                 pid += 1

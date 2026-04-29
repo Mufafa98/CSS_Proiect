@@ -63,7 +63,7 @@ class Scheduler:
         - Enqueue syscalls when needed.
         - Try to fill any freed cores.
         """
-        if self.process_queue.count_runing() == 0 and self.process_queue.count_waiting() == 0:
+        if self.process_queue.count_running() == 0 and self.process_queue.count_waiting() == 0:
             raise RuntimeError("Finished")
 
         to_stop: List[Tuple] = []
