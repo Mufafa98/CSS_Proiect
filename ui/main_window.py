@@ -122,6 +122,9 @@ class MainWindow(QMainWindow):
         self.loadmem_widget = LoadMemWidget()
         self.chart = GanttWidget()
 
+        self.loadmem_widget.hoverTickChanged.connect(self._on_loadmem_hover)
+        self.chart.hoverTickChanged.connect(self._on_gantt_hover)
+
         self.timeline_container = QWidget()
         self.timeline_layout = QVBoxLayout(self.timeline_container)
         self.timeline_layout.setContentsMargins(0, 0, 0, 0)
@@ -400,3 +403,9 @@ class MainWindow(QMainWindow):
             self.process_cards_layout.addWidget(card)
 
         self.process_cards_layout.addStretch(1)
+
+    def _on_loadmem_hover(self, tick: int) -> None:
+        self.chart.setHoverTick(tick, emit=False)
+
+    def _on_gantt_hover(self, tick: int) -> None:
+        self.loadmem_widget.setHoverTick(tick, emit=False)

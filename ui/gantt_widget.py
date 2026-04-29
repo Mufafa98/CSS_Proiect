@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from PyQt6.QtCore import Qt, QRect, QPoint
+from PyQt6.QtCore import Qt, QRect, QPoint, pyqtSignal
 from PyQt6.QtGui import QColor, QFont, QPainter, QPen, QPolygon
 from PyQt6.QtWidgets import QSizePolicy, QWidget
 
@@ -26,23 +26,57 @@ class GanttWidget(QWidget):
     ROW_HEIGHT = 46
     FOOTER = 30
 
+    hoverTickChanged = pyqtSignal(int)
+
     def __init__(self) -> None:
         super().__init__()
         self.intervals: list[Interval] = []
         self.cores: list[int] = []
         self.final_time: int = 0
         self.unit_width: int = 44
+        self._hover_tick: int = -1
+        self.setMouseTracking(True)
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
 
     def setData(self, intervals: list[Interval], cores: list[int], final_time: int) -> None:
         self.intervals = intervals
         self.cores = cores
         self.final_time = max(final_time, 0)
+        if self._hover_tick >= self.final_time:
+            self._hover_tick = -1
         self._update_size()
 
     def setUnitWidth(self, unit_width: int) -> None:
         self.unit_width = max(5, int(unit_width))
         self._update_size()
+
+    def setHoverTick(self, tick: int, emit: bool = False) -> None:
+        if tick < 0 or tick >= self.final_time:
+            tick = -1
+        if tick == self._hover_tick:
+            return
+        self._hover_tick = tick
+        if emit:
+            self.hoverTickChanged.emit(tick)
+        self.update()
+
+    def _tick_from_pos(self, x: float) -> int:
+        if self.final_time <= 0:
+            return -1
+        unit = max(5, int(self.unit_width))
+        if x < self.LEFT_MARGIN:
+            return -1
+        tick = int((x - self.LEFT_MARGIN) // unit)
+        if 0 <= tick < self.final_time:
+            return tick
+        return -1
+
+    def mouseMoveEvent(self, event) -> None:
+        tick = self._tick_from_pos(event.position().x())
+        self.setHoverTick(tick, emit=True)
+
+    def leaveEvent(self, event) -> None:
+        self.setHoverTick(-1, emit=True)
 
     def _update_size(self) -> None:
         left_margin = self.LEFT_MARGIN
@@ -253,3 +287,11 @@ class GanttWidget(QWidget):
             if text_rect.width() >= 18:
                 painter.setPen(QColor("white"))
                 painter.drawText(text_rect, Qt.AlignmentFlag.AlignCenter, f"P{it.pid}")
+
+        # Hover column overlay
+        if self._hover_tick >= 0:
+            x = left_margin + self._hover_tick * unit
+            hover_rect = QRect(x, grid_top, unit, grid_bottom - grid_top)
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QColor(0, 0, 0, 20))
+            painter.drawRect(hover_rect)
