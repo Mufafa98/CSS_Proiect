@@ -1,74 +1,127 @@
-from output import Output
-from .process_queue import ProcessQueue 
-from system.system import System
-from input import Input
+"""
+Scheduler runtime loop.
+
+Responsibilities:
+- Dispatch runnable processes to available cores.
+- Enforce time slices and stop reasons.
+- Coordinate system ticks and output logging.
+"""
+
+from __future__ import annotations
+
 import time
+from typing import List, Tuple
+
+from input import Input
+from output import Output
+from system.system import System
+from .process_queue import ProcessQueue
+
 
 class Scheduler:
+    """
+    Round-robin style scheduler that cooperates with the System layer.
+
+    It:
+    - Tracks user and system time slices.
+    - Fills CPU cores with runnable processes.
+    - Advances execution, stops processes when needed,
+      and triggers syscalls through the System.
+    """
+
     def __init__(self, input: Input, system: System, output: Output) -> None:
+        """
+        Initialize scheduler configuration and queues.
+
+        Parameters
+        ----------
+        input : Input
+            Parsed input parameters (slices, processes, cores).
+        system : System
+            Runtime system state (memory, syscalls, disk transfer).
+        output : Output
+            Output logger for schedule/unschedule/tick events.
+        """
         self.user_slice = input.get_user_slice()
         self.sys_slice = input.get_sys_slice()
 
-        self.process_queue = ProcessQueue(system.get_processes(), system.get_system_process(), system.cores())
+        self.process_queue = ProcessQueue(
+            system.get_processes(),
+            system.get_system_process(),
+            system.cores(),
+        )
         self.system = system
         self.output = output
 
-    def step(self):
+    def step(self) -> None:
+        """
+        Execute one scheduling step.
+
+        - Tick each running process.
+        - Stop processes that exceed time slice, finish, or enter syscall wait.
+        - Enqueue syscalls when needed.
+        - Try to fill any freed cores.
+        """
         if self.process_queue.count_runing() == 0 and self.process_queue.count_waiting() == 0:
-            print(f"Nothing to run {self.process_queue}")
-            raise Exception("Finished")
+            raise RuntimeError("Finished")
 
-        to_stop = []
+        to_stop: List[Tuple] = []
 
-        for process in self.process_queue.running():
-            process.process.tick()
-            print(f"Run on core {process.core} {process} {self.process_queue}")
-            process.time += 1
+        for slot in self.process_queue.running():
+            proc = slot.process
+            proc.tick()
+            slot.time += 1
 
-            time_slice = self.user_slice if not process.process.sys_proc else self.sys_slice
-            if process.time >= time_slice or process.process.left_to_run == 0:
-                reason = "undefined"
-                if process.time >= time_slice:
+            time_slice = self.sys_slice if proc.sys_proc else self.user_slice
+            if slot.time >= time_slice or proc.left_to_run == 0:
+                if slot.time >= time_slice:
                     reason = "time"
-                elif process.process.is_waiting_for_sys_call():
+                elif proc.is_waiting_for_sys_call():
                     reason = "syscall"
                 else:
                     reason = "finished"
-                to_stop.append((process, reason))
+                to_stop.append((slot, reason))
 
-        for (process, reason) in to_stop:
-            self.output.unscheduled(process.process.id, reason)
-            print(f"Stop proc {process.process.id} reason: {reason}")
-            self.process_queue.stop(process)
-            sys_slice = process.process.get_sys_slice()
+        for slot, reason in to_stop:
+            self.output.unscheduled(slot.process.id, reason)
+            self.process_queue.stop(slot)
+            sys_slice = slot.process.get_sys_slice()
             if sys_slice is not None:
-                self.system.make_sys_call(process.process, sys_slice)
+                self.system.make_sys_call(slot.process, sys_slice)
 
         self.fill_cores()
-   
-    def fill_cores(self):
-        while True:
-            if not self.process_queue.schedule_conditions():
-                return
 
-            process = self.process_queue.pop_runable(self.system)
-            if process == None:
+    def fill_cores(self) -> None:
+        """
+        Fill all available cores with runnable processes.
+
+        Stops when no cores are free or no processes are runnable.
+        """
+        while self.process_queue.schedule_conditions():
+            process = self.process_queue.pop_runnable(self.system)
+            if process is None:
                 return
             core = self.process_queue.run(process)
             self.output.scheduled(process.id, core)
 
+    def run(self) -> None:
+        """
+        Run the full simulation loop until completion.
 
-    def run(self):
+        Each cycle:
+        - Advance System state (memory, transfers).
+        - Emit tick output.
+        - Sleep briefly to slow down the log.
+        - Run one scheduling step and refill cores.
+        """
         cycle = 0
         self.fill_cores()
         while True:
             self.system.step()
             self.output.tick(cycle)
-            time.sleep(0.1)
-            print(f"cycle {cycle}")
+            time.sleep(0.5)
             cycle += 1
             self.step()
-            self.fill_cores()
 
 
 
