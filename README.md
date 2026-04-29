@@ -3,20 +3,19 @@
 From the repository root:
 
 ```bash
-python "task_input-output/main.py"
+python main.py --gui
 ```
 
 Input is read from:
 
-- task_input-output/input.txt
+- ./input.txt
 
 Outputs are generated automatically:
-- task_input-output/simulation_log.txt
-- task_input-output/simulation_stats.txt
+- logs/log.txt
 
 The script also prints the same information in the terminal.
 
-## Input Format (task_input-output/input.txt)
+## Input Format (./input.txt)
 
 Example:
 
@@ -27,6 +26,6 @@ TIMESLICE 3
 SYS_PERIOD 15
 DISK_RATE 8
 
-PROCESS 0 48 6 2 4 1 5
-PROCESS 1 64 3 4 7
+PROCESS 0 48 0 6 2 4 1 5
+PROCESS 1 64 0 3 4 7
 ```
