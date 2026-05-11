@@ -142,3 +142,10 @@ class ProcessQueue:
         Return the number of waiting user processes.
         """
         return len(self.__waiting)
+    
+
+    def count_done(self) -> int:
+        """
+        Return the number of done user processes.
+        """
+        return len(self.__done)
