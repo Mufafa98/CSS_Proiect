@@ -7,7 +7,7 @@ class Output:
     def __init__(self) -> None:
         self.log_file = open(LOG_OUTPUT_PATH, 'w')
 
-    def write(self, string: str):
+    def __write(self, string: str):
         self.log_file.write(f"{string}\n")
         self.log_file.flush()
 
