@@ -217,7 +217,6 @@ PROCESS 1 50 0 3
             cfg.get_sys_slice()
 
     def test_process_memory_exceeds_total_raises(self):
-        """A PROCESS line requesting more memory than total MEMORY should be rejected."""
         content = """
 PROCESSORS 1
 MEMORY 50

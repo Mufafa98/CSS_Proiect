@@ -36,7 +36,6 @@ def make_system(memory_size=1000, disk_speed=100, number_of_cores=2, processes=N
     return System(inp, out), out
 
 
-# __init__ and basic fields
 class TestInit(unittest.TestCase):
     def test_fields_set_from_input(self):
         inp = make_input(memory_size=512, disk_speed=50, number_of_cores=4)
@@ -63,7 +62,6 @@ class TestInit(unittest.TestCase):
         self.assertIn(1, s.processes)
         self.assertIn(2, s.processes)
 
-# make_sys_call
 class TestMakeSysCall(unittest.TestCase):
     def test_delegates_to_sys_proc(self):
         s, _ = make_system()
@@ -79,7 +77,6 @@ class TestMakeSysCall(unittest.TestCase):
             s.make_sys_call(proc, -1)
 
 
-# notify_running / notify_stopped
 class TestNotifyRunningStopped(unittest.TestCase):
     def test_adds_pid(self):
         s, _ = make_system()
@@ -108,7 +105,6 @@ class TestNotifyRunningStopped(unittest.TestCase):
         self.assertNotIn(2, s._running_pids)
 
 
-# load_in_memory
 class TestLoadInMemory(unittest.TestCase):
     def test_in_memory_returns_true_and_refreshes_lru(self):
         s, _ = make_system()
@@ -135,7 +131,6 @@ class TestLoadInMemory(unittest.TestCase):
         self.assertIs(s.loading_process, p)
 
 
-# _initiate_transfer
 class TestInitiateTransfer(unittest.TestCase):
     def test_ticks_is_ceil_of_memory_over_rate(self):
         s, _ = make_system(memory_size=500, disk_speed=30)
@@ -179,7 +174,6 @@ class TestInitiateTransfer(unittest.TestCase):
 
         victim.evict_from_memory.assert_called_once()
 
-# _evict_lru
 class TestEvictLru(unittest.TestCase):
     def _setup_system_with_victims(self, victims, running_pids=None):
         s, out = make_system(memory_size=10000, disk_speed=100)
@@ -229,7 +223,6 @@ class TestEvictLru(unittest.TestCase):
         self.assertIsNone(result)
 
 
-# _update_lru
 class TestUpdateLru(unittest.TestCase):
     def test_appends_new_pid(self):
         s, _ = make_system()
@@ -243,7 +236,6 @@ class TestUpdateLru(unittest.TestCase):
         self.assertEqual(s.lru_stack, [2, 3, 1])
 
 
-# step
 class TestStep(unittest.TestCase):
     def test_step_decrements_ticks_and_calls_output(self):
         s, out = make_system()

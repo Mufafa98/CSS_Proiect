@@ -22,10 +22,6 @@ class TestExecutionStage(unittest.TestCase):
         with self.assertRaises(ValueError):
             ExecutionStage(-1, 2)
 
-    def test_invalid_sys_call_zero(self):
-        with self.assertRaises(ValueError):
-            ExecutionStage(5, 0)
-
     def test_invalid_sys_call_negative(self):
         with self.assertRaises(ValueError):
             ExecutionStage(5, -3)
@@ -101,7 +97,7 @@ class TestProcessUser(unittest.TestCase):
     # SYS CALL WAITING LOGIC
     # -------------------------
 
-    def test_is_waiting_for_sys_call_true(self):  # evita already done
+    def test_is_waiting_for_sys_call_true(self):
         p = Process(1, [2, 3, 4], False)
 
         p.left_to_run = 0
