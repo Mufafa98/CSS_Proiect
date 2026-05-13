@@ -216,6 +216,20 @@ PROCESS 1 50 0 3
         with self.assertRaises(AttributeError):
             cfg.get_sys_slice()
 
+    def test_process_memory_exceeds_total_raises(self):
+        """A PROCESS line requesting more memory than total MEMORY should be rejected."""
+        content = """
+PROCESSORS 1
+MEMORY 50
+TIMESLICE 5
+SYS_PERIOD 1
+DISK_RATE 10
+PROCESS 1 100 0 5
+"""
+        p = self._write_tmp("input.txt", content)
+        with self.assertRaises(ValueError):
+            Input(p)
+
 
 class TestOutputLogging(unittest.TestCase):
     def setUp(self):

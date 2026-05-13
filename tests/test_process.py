@@ -71,6 +71,12 @@ class TestProcessUser(unittest.TestCase):
         p.tick()
         self.assertEqual(p.get_left_to_run(), 0)
 
+    def test_tick_after_done_does_not_go_negative(self):
+        p = Process(1, [1], False)
+        p.tick()
+
+        p.tick()
+        self.assertEqual(p.get_left_to_run(), 0)
     # -------------------------
     # ADVANCE LOGIC
     # -------------------------
