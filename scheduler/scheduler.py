@@ -42,8 +42,17 @@ class Scheduler:
         output : Output
             Output logger for schedule/unschedule/tick events.
         """
+        # Preconditions
+        assert input is not None, "input must exist"
+        assert system is not None, "system must exist"
+        assert output is not None, "output must exist"
+
         self.user_slice = input.get_user_slice()
         self.sys_slice = input.get_sys_slice()
+
+        # Preconditions
+        assert self.user_slice > 0, "user_slice must be positive"
+        assert self.sys_slice > 0, "sys_slice must be positive"
 
         self.process_queue = ProcessQueue(
             system.get_processes(),
@@ -63,15 +72,30 @@ class Scheduler:
         - Enqueue syscalls when needed.
         - Try to fill any freed cores.
         """
+
+        # Invariants
+        assert self.user_slice > 0, "user_slice must be positive"
+        assert self.sys_slice > 0, "sys_slice must be positive"
+        assert self.current_tick >= 0, "current_tick must be non-negative"
+
         if self.process_queue.count_running() == 0 and self.process_queue.count_waiting() == 0:
             raise RuntimeError("Finished")
 
         to_stop: List[Tuple] = []
 
         for slot in self.process_queue.running():
+            # Preconditions
+            assert slot.time >= 0, "slot.time must be non-negative"
+            assert slot.process.left_to_run >= 0, "left_to_run must be non-negative"
+            assert slot.process is not None, "process must exist"
+
             proc = slot.process
             proc.tick()
             slot.time += 1
+
+            # Post-tick invariants
+            assert proc.left_to_run >= 0, "left_to_run must be non-negative after tick"
+            assert slot.time >= 0, "slot.time must be non-negative after tick"
 
             time_slice = self.sys_slice if proc.sys_proc else self.user_slice
 
@@ -93,6 +117,7 @@ class Scheduler:
             self.process_queue.stop(slot)
             sys_slice = slot.process.get_sys_slice()
             if sys_slice is not None:
+                assert sys_slice > 0, "sys_slice must be positive when set"
                 self.system.make_sys_call(slot.process, sys_slice)
 
         self.fill_cores()
@@ -103,11 +128,20 @@ class Scheduler:
 
         Stops when no cores are free or no processes are runnable.
         """
+
+        # Invariants
+        assert self.current_tick >= 0, "current_tick must be non-negative"
+
         while self.process_queue.schedule_conditions():
             process = self.process_queue.pop_runnable(self.system, self.current_tick)
             if process is None:
                 return
+            # Preconditions
+            assert process.left_to_run > 0, "runnable process must have work"
+
             core = self.process_queue.run(process)
+            # Postcondition
+            assert core is not None and core >= 0, "core must be assigned and non-negative"
             self.output.scheduled(process.id, core)
 
     def run(self) -> None:
@@ -120,12 +154,17 @@ class Scheduler:
         - Sleep briefly to slow down the log.
         - Run one scheduling step and refill cores.
         """
+
+        # Preconditions
+        assert self.user_slice > 0 and self.sys_slice > 0, "time slices must be positive"
         self.fill_cores()
         while True:
             self.system.step()
             self.output.tick(self.current_tick)
             time.sleep(0.5)
             self.current_tick += 1
+            # Invariant
+            assert self.current_tick >= 0, "current_tick must be non-negative"
             self.step()
 
 
