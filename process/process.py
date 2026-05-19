@@ -1,7 +1,5 @@
 from collections import deque
-from execution_stage import ExecutionStage
-
-
+from process.execution_stage import ExecutionStage
 class SysCallRequest:
     """
     Represents a pending system call queued inside the system process.

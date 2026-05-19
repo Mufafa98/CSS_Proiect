@@ -1,7 +1,7 @@
 import unittest
-from process import Process
+from process.process import Process
 
-from process import ExecutionStage
+from process.process import ExecutionStage
 
 
 class TestExecutionStage(unittest.TestCase):

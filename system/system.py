@@ -1,7 +1,7 @@
 import math
 from typing import List, Optional
 from output import Output
-from process import Process
+from process.process import Process
 from input import Input
 
 

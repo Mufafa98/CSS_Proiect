@@ -4,7 +4,7 @@ from collections import deque
 from dataclasses import dataclass
 from typing import Deque, List, Optional
 
-from process import Process
+from process.process import Process
 from system.system import System
 
 

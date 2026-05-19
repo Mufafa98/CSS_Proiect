@@ -1,5 +1,4 @@
-from process import Process
-
+from process.process import Process
 class Input:
     def __init__(self, input_path: str):
         assert isinstance(input_path, str) and input_path, "input_path must be a non-empty string"
