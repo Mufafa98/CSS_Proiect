@@ -34,6 +34,22 @@ class ProcessQueue:
     """
 
     def __init__(self, waiting: list[Process], system_process: Process, cores: list[int]) -> None:
+
+        assert system_process is not None, "System process should not be None"
+        assert waiting is not None and len(waiting) > 0, "There should be processes waiting to be scheduled"
+        assert cores is not None and len(cores) > 0, "There should be cores to schedule processes on"
+
+        # Preconditions
+        assert len(set(cores)) == len(cores), "core IDs must be unique"
+        for core in cores:
+            assert core >= 0, "core IDs must be non-negative"
+
+        for process in waiting:
+            assert process is not None, "process must not be None"
+            assert process.left_to_run >= 0, "process.left_to_run must be non-negative"
+            assert process.get_release_time() >= 0, "release_time must be non-negative"
+            assert process.left_to_run != 0, "Processes should have something to run"
+
         self.__waiting_sys: Optional[Process] = system_process
         self.__waiting: Deque[Process] = deque(waiting)
         self.__running: List[ProcessOnCore] = []
@@ -52,6 +68,13 @@ class ProcessQueue:
         """
         Return the list of currently running processes (process + core + time).
         """
+        # Invariant
+        for slot in self.__running:
+            assert slot.process is not None, "slot.process must exist"
+            assert slot.time >= 0, "slot.time must be non-negative"
+            assert slot.core >= 0, "slot.core must be non-negative"
+            assert slot.process.left_to_run >= 0, "left_to_run must be non-negative"
+            assert slot.core not in self.__free_cores, "running core must not be free"
         return self.__running
 
     def pop_runnable(self, system: System, current_tick: int) -> Optional[Process]:
@@ -67,9 +90,16 @@ class ProcessQueue:
         Process | None
             Runnable process or None if none can be scheduled.
         """
+
+        # Preconditions
+        assert current_tick >= 0, "current_tick must be non-negative"
+        assert system is not None, "system must exist"
+
         if self.__waiting_sys is not None and self.__waiting_sys.left_to_run != 0:
             process = self.__waiting_sys
             self.__waiting_sys = None
+            # Postcondition
+            assert process is not None, "process must be returned"
             return process
 
         counter = 0
@@ -82,6 +112,8 @@ class ProcessQueue:
             elif process.left_to_run == 0 or not system.load_in_memory(process):
                 self.__waiting.append(process)
             else:
+                # Postcondition
+                assert process.left_to_run > 0, "runnable process must have work"
                 return process
 
             counter += 1
@@ -103,7 +135,16 @@ class ProcessQueue:
         int
             Core ID where the process was scheduled.
         """
+
+        # Preconditions
+        assert process is not None, "process must exist"
+        assert len(self.__free_cores) > 0, "must have at least one free core"
+        assert process not in self.__done, "process must not be done"
+        assert all(slot.process != process for slot in self.__running), "process must not be running"
+        assert process.left_to_run > 0, "process should have something to run if passed to run()"
+
         most_recent = process.get_last_cpu()
+        assert most_recent is None or most_recent >= 0, "last_cpu must be non-negative when set"
 
         if most_recent is not None and most_recent in self.__free_cores:
             core = most_recent
@@ -113,23 +154,41 @@ class ProcessQueue:
 
         process.record_cpu(core)
         self.__running.append(ProcessOnCore(process, 0, core))
+
+        # Postconditions
+        assert core is not None and core >= 0, "core must be assigned and non-negative"
+        assert core not in self.__free_cores, "assigned core must not be free"
         return core
 
     def stop(self, process: ProcessOnCore) -> None:
         """
         Stop a running process and return its core to the free pool.
         """
+        # Preconditions
+        assert process in self.__running, "process must be running to stop"
+        assert process.process is not None, "process must exist"
+        assert process.time >= 0, "process time must be non-negative"
+        assert process.process.left_to_run >= 0, "left_to_run must be non-negative"
+        assert process.core not in self.__free_cores, "core should not be both ocupied and free"
+
         self.__running.remove(process)
         self.__free_cores.appendleft(process.core)
 
         if process.process.sys_proc:
             self.__waiting_sys = process.process
+            # Postcondition
+            assert self.__waiting_sys is not None, "system process must be queued"
             return
 
         if process.process.is_done():
             self.__done.append(process.process)
+            assert process.process.left_to_run == 0, "left to run should be 0 is done"
         else:
             self.__waiting.append(process.process)
+
+        # Postcondition
+        assert process.process not in self.__running, "process must be removed from running"
+        assert process.core in self.__free_cores, "core must be marked as free"
 
     def count_running(self) -> int:
         """
