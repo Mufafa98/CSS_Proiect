@@ -42,7 +42,7 @@ class Scheduler:
         output : Output
             Output logger for schedule/unschedule/tick events.
         """
-        # Preconditions
+        
         assert input is not None, "input must exist"
         assert system is not None, "system must exist"
         assert output is not None, "output must exist"
@@ -50,7 +50,7 @@ class Scheduler:
         self.user_slice = input.get_user_slice()
         self.sys_slice = input.get_sys_slice()
 
-        # Preconditions
+        
         assert self.user_slice > 0, "user_slice must be positive"
         assert self.sys_slice > 0, "sys_slice must be positive"
 
@@ -73,7 +73,7 @@ class Scheduler:
         - Try to fill any freed cores.
         """
 
-        # Invariants
+        
         assert self.user_slice > 0, "user_slice must be positive"
         assert self.sys_slice > 0, "sys_slice must be positive"
         assert self.current_tick >= 0, "current_tick must be non-negative"
@@ -84,7 +84,7 @@ class Scheduler:
         to_stop: List[Tuple] = []
 
         for slot in self.process_queue.running():
-            # Preconditions
+            
             assert slot.time >= 0, "slot.time must be non-negative"
             assert slot.process.left_to_run >= 0, "left_to_run must be non-negative"
             assert slot.process is not None, "process must exist"
@@ -129,18 +129,18 @@ class Scheduler:
         Stops when no cores are free or no processes are runnable.
         """
 
-        # Invariants
+        
         assert self.current_tick >= 0, "current_tick must be non-negative"
 
         while self.process_queue.schedule_conditions():
             process = self.process_queue.pop_runnable(self.system, self.current_tick)
             if process is None:
                 return
-            # Preconditions
+            
             assert process.left_to_run > 0, "runnable process must have work"
 
             core = self.process_queue.run(process)
-            # Postcondition
+            
             assert core is not None and core >= 0, "core must be assigned and non-negative"
             self.output.scheduled(process.id, core)
 
@@ -155,7 +155,7 @@ class Scheduler:
         - Run one scheduling step and refill cores.
         """
 
-        # Preconditions
+        
         assert self.user_slice > 0 and self.sys_slice > 0, "time slices must be positive"
         self.fill_cores()
         while True:
@@ -163,7 +163,7 @@ class Scheduler:
             self.output.tick(self.current_tick)
             time.sleep(0.5)
             self.current_tick += 1
-            # Invariant
+            
             assert self.current_tick >= 0, "current_tick must be non-negative"
             self.step()
 

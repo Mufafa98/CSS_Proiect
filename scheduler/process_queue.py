@@ -39,7 +39,7 @@ class ProcessQueue:
         assert waiting is not None and len(waiting) > 0, "There should be processes waiting to be scheduled"
         assert cores is not None and len(cores) > 0, "There should be cores to schedule processes on"
 
-        # Preconditions
+        
         assert len(set(cores)) == len(cores), "core IDs must be unique"
         for core in cores:
             assert core >= 0, "core IDs must be non-negative"
@@ -68,7 +68,7 @@ class ProcessQueue:
         """
         Return the list of currently running processes (process + core + time).
         """
-        # Invariant
+        
         for slot in self.__running:
             assert slot.process is not None, "slot.process must exist"
             assert slot.time >= 0, "slot.time must be non-negative"
@@ -91,14 +91,14 @@ class ProcessQueue:
             Runnable process or None if none can be scheduled.
         """
 
-        # Preconditions
+        
         assert current_tick >= 0, "current_tick must be non-negative"
         assert system is not None, "system must exist"
 
         if self.__waiting_sys is not None and self.__waiting_sys.left_to_run != 0:
             process = self.__waiting_sys
             self.__waiting_sys = None
-            # Postcondition
+            
             assert process is not None, "process must be returned"
             return process
 
@@ -112,7 +112,7 @@ class ProcessQueue:
             elif process.left_to_run == 0 or not system.load_in_memory(process):
                 self.__waiting.append(process)
             else:
-                # Postcondition
+                
                 assert process.left_to_run > 0, "runnable process must have work"
                 return process
 
@@ -136,7 +136,7 @@ class ProcessQueue:
             Core ID where the process was scheduled.
         """
 
-        # Preconditions
+        
         assert process is not None, "process must exist"
         assert len(self.__free_cores) > 0, "must have at least one free core"
         assert process not in self.__done, "process must not be done"
@@ -155,7 +155,7 @@ class ProcessQueue:
         process.record_cpu(core)
         self.__running.append(ProcessOnCore(process, 0, core))
 
-        # Postconditions
+        
         assert core is not None and core >= 0, "core must be assigned and non-negative"
         assert core not in self.__free_cores, "assigned core must not be free"
         return core
@@ -164,7 +164,7 @@ class ProcessQueue:
         """
         Stop a running process and return its core to the free pool.
         """
-        # Preconditions
+        
         assert process in self.__running, "process must be running to stop"
         assert process.process is not None, "process must exist"
         assert process.time >= 0, "process time must be non-negative"
@@ -176,7 +176,7 @@ class ProcessQueue:
 
         if process.process.sys_proc:
             self.__waiting_sys = process.process
-            # Postcondition
+            
             assert self.__waiting_sys is not None, "system process must be queued"
             return
 
@@ -186,7 +186,7 @@ class ProcessQueue:
         else:
             self.__waiting.append(process.process)
 
-        # Postcondition
+        
         assert process.process not in self.__running, "process must be removed from running"
         assert process.core in self.__free_cores, "core must be marked as free"
 

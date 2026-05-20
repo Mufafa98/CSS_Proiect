@@ -65,7 +65,7 @@ class System:
         None
             Sets up all internal fields in place.
         """
-        # preconditions: input values must be valid before we do anything
+        
         assert input.memory_size > 0, (
             f"memory_size must be positive, got {input.memory_size}"
         )
@@ -107,7 +107,7 @@ class System:
 
         self.output: Output = output
 
-        # postconditions: after init, RAM should be fully free and no transfer running
+        
         assert self.total_ram == self.available_ram, (
             "After __init__, available_ram must equal total_ram"
         )

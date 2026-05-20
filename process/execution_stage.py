@@ -22,7 +22,7 @@ class ExecutionStage:
 
     def __init__(self, run_ticks: int, sys_call_ticks: int | None) -> None:
 
-        # PRECONDITIONS
+        
         assert isinstance(run_ticks, int), "run_ticks must be integer."
         assert run_ticks > 0, "run_ticks must be positive."
         assert sys_call_ticks is None or sys_call_ticks > 0, "sys_call_ticks must be positive or None."
@@ -30,7 +30,7 @@ class ExecutionStage:
         self.run_ticks = run_ticks
         self.sys_call_ticks = sys_call_ticks
 
-        # POSTCONDITIONS
+        
         assert self.run_ticks > 0
         assert self.sys_call_ticks is None or self.sys_call_ticks > 0
 
