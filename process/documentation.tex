@@ -1,0 +1,318 @@
+\documentclass{article}
+
+% Language setting
+% Replace `english' with e.g. `spanish' to change the document language
+\usepackage[english]{babel}
+
+% Set page size and margins
+% Replace `letterpaper' with `a4paper' for UK/EU standard size
+\usepackage[letterpaper,top=2cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
+
+% Useful packages
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage[colorlinks=true, allcolors=blue]{hyperref}
+
+\title{CSS}
+\author{Dumitrita Sorohan}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+
+\end{abstract}
+
+\section{Personal Contribution}
+
+My contribution to the project focused on the implementation and validation of the process execution subsystem of the operating system scheduler simulator.  
+More specifically, I worked on the development of the \texttt{ExecutionStage} and \texttt{Process} classes, together with the corresponding unit tests and runtime assertions required in the later project phases.
+
+The implemented components are responsible for simulating the behaviour of user and system processes, handling execution stages, system calls, CPU affinity tracking, and process memory state management.
+
+
+\section{Phase 1 -- Application Development}
+
+\subsection{ExecutionStage Class}
+
+The \texttt{ExecutionStage} class was designed to represent one execution segment of a user process.  
+Each stage contains:
+
+\begin{itemize}
+    \item the number of CPU execution ticks;
+    \item the duration of the following system call;
+    \item or \texttt{None} if the stage is the final execution segment.
+\end{itemize}
+
+For example, the sequence:
+
+\begin{verbatim}
+(5 2 3 4 6)
+\end{verbatim}
+
+is interpreted as:
+
+\begin{itemize}
+    \item execute for 5 ticks, then perform a system call of 2 ticks;
+    \item execute for 3 ticks, then perform a system call of 4 ticks;
+    \item execute for 6 ticks and terminate.
+\end{itemize}
+
+The class also performs validation of the received values in order to prevent invalid execution stages from being created.
+
+
+
+\subsection{Process Class}
+
+The \texttt{Process} class represents both user processes and the special system process responsible for executing system calls.
+
+The implementation supports:
+
+\begin{itemize}
+    \item parsing execution sequences into execution stages;
+    \item execution progress through CPU ticks;
+    \item transitions between execution stages;
+    \item system call management;
+    \item CPU affinity tracking;
+    \item memory residency simulation.
+\end{itemize}
+
+\subsubsection{Execution Sequence Parsing}
+
+One important part of the implementation was transforming the flat execution sequence into structured execution stages.
+
+For example:
+
+\begin{verbatim}
+[5, 2, 3, 4, 6]
+\end{verbatim}
+
+is internally converted into:
+
+\begin{center}
+\begin{tabular}{|c|c|c|}
+\hline
+Stage & CPU Burst & System Call \\
+\hline
+1 & 5 & 2 \\
+2 & 3 & 4 \\
+3 & 6 & None \\
+\hline
+\end{tabular}
+\end{center}
+
+This functionality was implemented inside the private method:
+
+\begin{verbatim}
+_parse_sequence()
+\end{verbatim}
+
+
+
+\subsubsection{Process Execution Logic}
+
+The execution logic was implemented through methods such as:
+
+\begin{verbatim}
+tick()
+advance()
+is_done()
+is_waiting_for_sys_call()
+\end{verbatim}
+
+The \texttt{tick()} method advances the execution of the process by one unit of time, while \texttt{advance()} moves the process to the next execution stage after a system call finishes.
+
+The implementation distinguishes clearly between user processes and the system process, since their runtime behaviour is different.
+
+
+
+\subsubsection{System Call Queue}
+
+For the system process, I implemented a queue-based mechanism for handling system calls requested by user processes.
+
+System calls are stored using the helper class:
+
+\begin{verbatim}
+SysCallRequest
+\end{verbatim}
+
+The queue allows the system process to execute requests sequentially and resume the blocked user processes after completion.
+
+
+
+\subsubsection{CPU Affinity Tracking}
+
+Another implemented feature was CPU affinity tracking.  
+Since the scheduler specification states that a process should preferably continue execution on the processor it used most recently, each process stores a history of CPU assignments.
+
+The following methods were implemented:
+
+\begin{verbatim}
+record_cpu()
+get_last_cpu()
+get_cpu_history()
+\end{verbatim}
+
+
+
+\subsubsection{Memory State Management}
+
+The process implementation also contains support for memory residency simulation.
+
+The methods:
+
+\begin{verbatim}
+load_into_memory()
+evict_from_memory()
+is_in_memory()
+\end{verbatim}
+
+allow the scheduler and memory manager to determine whether a process is currently loaded into RAM or stored on disk.
+
+
+
+\section{Phase 2 -- Unit Testing}
+
+For testing, I used Python's built-in \texttt{unittest} framework.
+
+The goal of the tests was to verify:
+
+\begin{itemize}
+    \item correct parsing of execution sequences;
+    \item correct execution behaviour;
+    \item proper stage transitions;
+    \item correct system call handling;
+    \item CPU history functionality;
+    \item memory state transitions;
+    \item handling of invalid inputs and edge cases.
+\end{itemize}
+
+\subsection{ExecutionStage Tests}
+
+The tests for \texttt{ExecutionStage} verify:
+
+\begin{itemize}
+    \item valid object creation;
+    \item invalid execution durations;
+    \item invalid system call durations;
+    \item correct handling of final stages;
+    \item string representation behaviour.
+\end{itemize}
+
+Example:
+
+\begin{verbatim}
+with self.assertRaises(ValueError):
+    ExecutionStage(0, 2)
+\end{verbatim}
+
+
+
+\subsection{Process Tests}
+
+The \texttt{Process} class tests cover both user and system process behaviour.
+
+The tested scenarios include:
+
+\begin{itemize}
+    \item execution sequence parsing;
+    \item decrementing execution ticks;
+    \item process completion;
+    \item waiting for system calls;
+    \item queueing multiple system calls;
+    \item triggering user process advancement after system call completion;
+    \item CPU history recording;
+    \item memory loading and eviction.
+\end{itemize}
+
+Several edge cases were also tested, such as invalid stage advancement or executing a system process with an empty syscall queue.
+
+
+
+\section{Phase 3 -- Assertions}
+
+Assertions were added directly into the implementation code in order to validate program correctness during runtime.
+
+The assertions were mainly used for:
+
+\begin{itemize}
+    \item preconditions;
+    \item postconditions;
+    \item class invariants;
+    \item state consistency checks.
+\end{itemize}
+
+\subsection{Assertions in ExecutionStage}
+
+The constructor validates that execution durations are always positive.
+
+Example:
+
+\begin{verbatim}
+assert run_ticks > 0
+assert sys_call_ticks is None or sys_call_ticks > 0
+\end{verbatim}
+
+
+
+\subsection{Assertions in Process}
+
+A dedicated method named:
+
+\begin{verbatim}
+_check_invariants()
+\end{verbatim}
+
+was implemented to verify the internal consistency of a process object.
+
+The invariants ensure that:
+
+\begin{itemize}
+    \item process identifiers are valid;
+    \item execution stages remain consistent;
+    \item runtime values never become negative;
+    \item stage indexes remain inside valid bounds.
+\end{itemize}
+
+Example invariant:
+
+\begin{verbatim}
+assert 0 <= self.left_to_run <= current.run_ticks
+\end{verbatim}
+
+
+
+Additional assertions were inserted into methods such as:
+
+\begin{verbatim}
+tick()
+advance()
+add_sys_call()
+record_cpu()
+\end{verbatim}
+
+These checks helped identify invalid runtime states during development and debugging.
+
+
+
+\section{Conclusion}
+
+Through this contribution, I implemented the core process execution functionality required by the operating system scheduling simulator.
+
+The developed subsystem provides:
+
+\begin{itemize}
+    \item process execution modelling;
+    \item system call handling;
+    \item execution stage management;
+    \item CPU affinity tracking;
+    \item memory state simulation;
+    \item runtime correctness validation using assertions;
+    \item extensive unit testing coverage.
+\end{itemize}
+
+The implementation was intentionally kept modular and relatively simple in order to facilitate integration with the scheduler, memory manager, and graphical interface developed in the other parts of the project.
+
+
+\end{document}
